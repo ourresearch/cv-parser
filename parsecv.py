@@ -1,9 +1,10 @@
-import json
+import referenceparser
 import urllib2
 import StringIO
-from functools import wraps
 
-from flask import Flask, request, Response
+from utils import ratelimit, jsonify
+
+from flask import Flask, request
 from werkzeug.datastructures import FileStorage
 
 from pdfminer.pdfparser import PDFParser, PDFDocument
@@ -12,21 +13,9 @@ from pdfminer.converter import PDFPageAggregator
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfdevice import PDFDevice
 
+
 app = Flask(__name__)
 app.config.from_object('settings')
-
-
-def jsonify(f):
-    """Decorator to set appropriate mimetype and response code."""
-    @wraps(f)
-    def inner(*args, **kwargs):
-        output = f(*args, **kwargs)
-        if isinstance(output, dict) and output.get("status") == "error":
-            response_code = 422
-        else:
-            response_code = 200
-        return Response(json.dumps(output), mimetype='application/json', status=response_code)
-    return inner
 
 
 def extract_resource_from_request():
@@ -91,10 +80,11 @@ def pdf_to_text(pdf):
 
 
 def parse_references(text):
-    return json.loads(open("sample.json").read())
+    return referenceparser.parse_plaintext(text)
 
 
-@app.route('/parsecv/', methods=['GET', 'POST'])
+@app.route('/parsecv/', methods=['POST'])
+@ratelimit(limit=app.config["REQUESTS_PER_MINUTE"], per=60)
 @jsonify
 def parse_request():
     """
