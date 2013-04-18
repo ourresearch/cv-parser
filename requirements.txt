@@ -2,3 +2,4 @@ Flask==0.9
 gunicorn==0.17.2
 pdfminer==20110515
 redis==2.7.2
+BeautifulSoup==3.2.1

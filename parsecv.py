@@ -1,8 +1,9 @@
 import referenceparser
 import urllib2
 import StringIO
+from bs4 import BeautifulSoup
 
-from utils import ratelimit, jsonify
+from utils import ratelimit, jsonify, get_view_rate_limit, htmlstrip
 
 from flask import Flask, request
 from werkzeug.datastructures import FileStorage
@@ -25,17 +26,38 @@ def extract_resource_from_request():
         raise ValueError("Received no data.")
 
     if request.form:
-        http_response = urllib2.urlopen(request.form["url"])
-        resource_size = int(http_response.headers["Content-Length"])
-        if (resource_size > app.config["MAXIMUM_RESOURCE_SIZE"]):
-            raise ValueError("Requested file size exceeds threshold: %s bytes" % resource_size)
+        resource_size = 0
         input_file = StringIO.StringIO()
-        input_file.write(http_response.read())
+        http_response = urllib2.urlopen(request.form["url"])
+
+        maximum_size = app.config["MAX_CONTENT_LENGTH"]
+
+        # open resource but keep track of the size, throw exception if size exceeded
+        byte = True
+        while (byte):
+            byte = http_response.read(10240)
+            input_file.write(byte)
+            resource_size += 10240
+            if resource_size > maximum_size:
+                byte = False
+                raise ValueError("File size threshold exceeded.")
+
         return input_file
     else:
         if not isinstance(request.files["file"], FileStorage):
             raise ValueError("Invalid file type.")
         return request.files["file"]
+
+
+def is_pdf(resource):
+    """Function to determine whether the input datatype is in PDF format."""
+    resource.seek(0)
+    magic_number = resource.read(4)
+    resource.seek(0)
+    if magic_number == "%PDF":
+        return True
+    else:
+        return False
 
 
 def pdf_from_resource(resource):
@@ -79,6 +101,17 @@ def pdf_to_text(pdf):
     return output
 
 
+def html_to_plaintext(resource):
+    """Takes a file object containing HTML and returns all text elements."""
+
+    soup = BeautifulSoup(resource)
+    text = ""
+    for string in soup.stripped_strings:
+        text += repr(string) + '\n'
+
+    return text
+
+
 def parse_references(text):
     return referenceparser.parse_plaintext(text)
 
@@ -95,22 +128,37 @@ def parse_request():
     url -- full URL to a PDF file
     """
 
+    text = ""
+
     try:
         input_file = extract_resource_from_request()
+
     except ValueError, e:
         return {"status": "error", "message": str(e)}
     except urllib2.HTTPError, e:
         return {"status": "error", "message": str(e)}
 
-    try:
-        pdf_file = pdf_from_resource(input_file)
-    except Exception, e:
-        return {"status": "error", "message": str(e)}
+    if is_pdf(input_file):
 
-    try:
-        text = pdf_to_text(pdf_file)
-    except Exception, e:
-        return {"status": "error", "message": str(e)}
+        try:
+            pdf_file = pdf_from_resource(input_file)
+        except Exception, e:
+            return {"status": "error", "message": str(e)}
+
+        try:
+            text = pdf_to_text(pdf_file)
+        except Exception, e:
+            return {"status": "error", "message": str(e)}
+
+    elif request.form:
+        try:
+            text = html_to_plaintext(input_file)
+        except Exception, e:
+            return {"status": "error", "message": str(e)}
+
+    else:
+
+        return {"status": "error", "message": "Unsupported file format."}
 
     try:
         references = parse_references(text)
@@ -118,3 +166,14 @@ def parse_request():
         return {"status": "error", "message": str(e)}
 
     return references
+
+
+@app.after_request
+def inject_x_rate_headers(response):
+    limit = get_view_rate_limit()
+    if limit and limit.send_x_headers:
+        h = response.headers
+        h.add('X-RateLimit-Remaining', str(limit.remaining))
+        h.add('X-RateLimit-Limit', str(limit.limit))
+        h.add('X-RateLimit-Reset', str(limit.reset))
+    return response
