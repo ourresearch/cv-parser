@@ -1,3 +1,4 @@
+from subprocess import call
 STUB = [
         {
             "bibnumber": "3.1",
@@ -47,13 +48,3 @@ STUB = [
             "znumber": "0363.60052"
             },
         ]
-
-
-def parse_plaintext(body):
-    """Parse plaintext and return references in a BibJSON-like dict."""
-    return STUB
-
-
-def parse_html(body):
-    """Parse html and return references in a BibJSON-like dict."""
-    return STUB
