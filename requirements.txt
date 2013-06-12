@@ -1,0 +1,9 @@
+Flask==0.9
+gunicorn==0.17.2
+pdfminer
+redis==2.7.2
+envoy
+shortuuid
+unidecode
+lxml
+cssselect
