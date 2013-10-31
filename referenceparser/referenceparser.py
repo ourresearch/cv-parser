@@ -14,6 +14,8 @@ def parse_plaintext(body):
     #tmpin = shortuuid.uuid()
     body = unidecode(body)
     #print body
+    print tmpin
+
     preprocessed_body = preprocess_body(body)
     #preprocessed_body = "References\n\n" + group_citations(preprocessed_body)
     #print preprocessed_body
@@ -22,14 +24,18 @@ def parse_plaintext(body):
     file.write(preprocessed_body.encode("utf-8"))
     file.close()
     try:
-        parsing = envoy.run("perl ParsCit/bin/citeExtract.pl -m extract_citations %s" % tmpin)
-        bibjson_citations = xml_to_bibjson(parsing.std_out)
+        parsing = envoy.run("perl /Users/hpiwowar/Documents/Projects/tiv2/ParsCit/bin/citeExtract.pl -m extract_citations %s" % tmpin)
+        print parsing
+        text = parsing.std_out
+        print text
+        bibjson_citations = xml_to_bibjson(text)
     except IOError:
         return {"status": "error", "message": "Could not run parser on file"}
     try:
-        os.remove(tmpin)
-        os.remove(tmpin + ".cite")
-        os.remove(tmpin + ".body")
+        # os.remove(tmpin)
+        # os.remove(tmpin + ".cite")
+        # os.remove(tmpin + ".body")
+        pass
     except OSError:
         pass
 

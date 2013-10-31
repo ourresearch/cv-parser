@@ -10,11 +10,11 @@ from utils import ratelimit, jsonify, get_view_rate_limit, get_url
 from flask import Flask, request
 from werkzeug.datastructures import FileStorage
 
-from pdfminer.pdfparser import PDFParser, PDFDocument
-from pdfminer.layout import LAParams, LTTextBox, LTTextLine
-from pdfminer.converter import PDFPageAggregator
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfdevice import PDFDevice
+# from pdfminer.pdfparser import PDFParser, PDFDocument
+# from pdfminer.layout import LAParams, LTTextBox, LTTextLine
+# from pdfminer.converter import PDFPageAggregator
+# from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+# from pdfminer.pdfdevice import PDFDevice
 
 app = Flask(__name__)
 app.config.from_object('settings')
@@ -145,7 +145,7 @@ def parse_request():
                 except Exception, e:
                     return {"status": "error", "message": str(e)}
             else:
-                return {"status": "error", "message": "Unsupported file format."}
+                text = input_file.read().decode("utf-8")
 
         try:
             if need_parsing:
