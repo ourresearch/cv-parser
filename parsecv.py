@@ -10,7 +10,7 @@ from utils import ratelimit, jsonify, get_view_rate_limit, get_url
 from flask import Flask, request
 from werkzeug.datastructures import FileStorage
 
-from pdfminer.pdfparser import PDFParser, PDFDocument
+from pdfminer.pdfdocument import PDFParser, PDFDocument
 from pdfminer.layout import LAParams, LTTextBox, LTTextLine
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
