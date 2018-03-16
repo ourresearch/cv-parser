@@ -1,10 +1,14 @@
 cv-parser
 =========
 
+NO LONGER MAINTAINED.
+
+
+***
+
 An api to parse a CV, in particular the elements of its publication list.
 
-To deploy, use custom buildpack:
-
+To deploy, it used to work to use a custom buildpack (not sure if this is still the correct syntax for heroku)
 heroku config:set BUILDPACK_URL=https://github.com/stochastic-technologies/impactstory-buildpack.git -a heroku_app_name
 
 Accepts POST requests to /parsecv/ either with a "url" field or a "file" field for pdf files.
